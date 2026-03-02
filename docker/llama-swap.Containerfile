@@ -14,12 +14,11 @@ WORKDIR /src/ui-svelte
 RUN npm install && npm run build
 
 # Build llama-swap from source
-FROM --platform=$BUILDPLATFORM golang:1.25 AS builder
-ARG TARGETARCH
+FROM golang:1.25 AS builder
 COPY --from=source /src /src
 COPY --from=ui-builder /src/proxy/ui_dist /src/proxy/ui_dist
 WORKDIR /src
-RUN CGO_ENABLED=0 GOARCH=${TARGETARCH} go build -o /llama-swap .
+RUN CGO_ENABLED=0 go build -o /llama-swap .
 
 FROM ${BASE_IMAGE}:${BASE_TAG}
 
