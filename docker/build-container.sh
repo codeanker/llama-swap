@@ -27,7 +27,7 @@ ARCH=$1
 PUSH_IMAGES=${2:-false}
 
 # List of allowed architectures
-ALLOWED_ARCHS=("intel" "vulkan" "musa" "cuda" "cuda13" "cpu" "rocm")
+ALLOWED_ARCHS=("cuda" "cuda13")
 
 # Check if ARCH is in the allowed list
 if [[ ! " ${ALLOWED_ARCHS[@]} " =~ " ${ARCH} " ]]; then
@@ -125,6 +125,9 @@ if [[ ! -z "$DEBUG_ABORT_BUILD" ]]; then
     exit 0
 fi
 
+# Target platform(s) for multi-arch builds, customizable via environment variable
+BUILD_PLATFORM=${BUILD_PLATFORM:-linux/arm64}
+
 for CONTAINER_TYPE in non-root root; do
   CONTAINER_TAG="ghcr.io/${LS_REPO}:${ARCH}-${LCPP_TAG}"
   CONTAINER_LATEST="ghcr.io/${LS_REPO}:${ARCH}"
@@ -140,24 +143,29 @@ for CONTAINER_TYPE in non-root root; do
     USER_HOME=/app
   fi
 
+  PUSH_ARGS=""
+  if [ "$PUSH_IMAGES" == "true" ]; then
+    PUSH_ARGS="--push"
+  fi
+
   log_info "Building $CONTAINER_TYPE $CONTAINER_TAG"
-  docker build --provenance=false -f llama-swap.Containerfile --build-arg BASE_TAG=${BASE_TAG} --build-arg UID=${USER_UID} \
-    --build-arg LS_REPO=${LS_REPO} --build-arg LS_REF=${LS_REF} --build-arg GID=${USER_GID} --build-arg USER_HOME=${USER_HOME} -t ${CONTAINER_TAG} -t ${CONTAINER_LATEST} \
-    --build-arg BASE_IMAGE=${BASE_IMAGE} .
+  docker buildx build --platform ${BUILD_PLATFORM} --provenance=false \
+    -f llama-swap.Containerfile \
+    --build-arg BASE_TAG=${BASE_TAG} --build-arg UID=${USER_UID} \
+    --build-arg LS_REPO=${LS_REPO} --build-arg LS_REF=${LS_REF} \
+    --build-arg GID=${USER_GID} --build-arg USER_HOME=${USER_HOME} \
+    --build-arg BASE_IMAGE=${BASE_IMAGE} \
+    -t ${CONTAINER_TAG} -t ${CONTAINER_LATEST} ${PUSH_ARGS} .
 
   # For architectures with stable-diffusion.cpp support, layer sd-server on top
   case "$ARCH" in
     "musa" | "vulkan")
       log_info "Adding sd-server to $CONTAINER_TAG"
-      docker build --provenance=false -f llama-swap-sd.Containerfile \
+      docker buildx build --platform ${BUILD_PLATFORM} --provenance=false \
+        -f llama-swap-sd.Containerfile \
         --build-arg BASE=${CONTAINER_TAG} \
         --build-arg SD_IMAGE=${SD_IMAGE} --build-arg SD_TAG=${SD_TAG} \
         --build-arg UID=${USER_UID} --build-arg GID=${USER_GID} \
-        -t ${CONTAINER_TAG} -t ${CONTAINER_LATEST} . ;;
+        -t ${CONTAINER_TAG} -t ${CONTAINER_LATEST} ${PUSH_ARGS} . ;;
   esac
-
-  if [ "$PUSH_IMAGES" == "true" ]; then
-    docker push ${CONTAINER_TAG}
-    docker push ${CONTAINER_LATEST}
-  fi
 done
