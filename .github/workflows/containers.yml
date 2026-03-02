@@ -13,9 +13,9 @@ on:
   # Run on workflow file changes (without pushing)
   push:
     paths:
-      - '.github/workflows/containers.yml'
-      - 'docker/build-container.sh'
-      - 'docker/*.Containerfile'
+      - ".github/workflows/containers.yml"
+      - "docker/build-container.sh"
+      - "docker/*.Containerfile"
 
 # grant permissions on GITHUB_TOKEN to publish packages
 # ref: https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#publishing-a-package-using-an-action
@@ -68,6 +68,6 @@ jobs:
     steps:
       - uses: actions/delete-package-versions@v5
         with:
-          package-name: 'llama-swap'
-          package-type: 'container'
-          delete-only-untagged-versions: 'true'
+          package-name: "llama-swap"
+          package-type: "container"
+          delete-only-untagged-versions: "true"
