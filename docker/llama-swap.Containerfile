@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ghcr.io/ggml-org/llama.cpp
+ARG BASE_IMAGE=ghcr.io/codeanker/llama.cpp
 ARG BASE_TAG=server-cuda
 FROM ${BASE_IMAGE}:${BASE_TAG}
 

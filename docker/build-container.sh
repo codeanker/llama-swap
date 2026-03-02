@@ -43,7 +43,7 @@ fi
 
 # Set llama.cpp base image, customizable using the BASE_LLAMACPP_IMAGE environment
 # variable, this permits testing with forked llama.cpp repositories
-BASE_IMAGE=${BASE_LLAMACPP_IMAGE:-ghcr.io/ggml-org/llama.cpp}
+BASE_IMAGE=${BASE_LLAMACPP_IMAGE:-ghcr.io/codeanker/llama.cpp}
 SD_IMAGE=${BASE_SDCPP_IMAGE:-ghcr.io/leejet/stable-diffusion.cpp}
 
 # Set llama-swap repository, automatically uses GITHUB_REPOSITORY variable
@@ -67,7 +67,7 @@ fetch_llama_tag() {
         log_debug "Fetching page $page for tag prefix: $tag_prefix"
 
         local response=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/users/ggml-org/packages/container/llama.cpp/versions?per_page=${per_page}&page=${page}")
+            "https://api.github.com/users/codeanker/packages/container/llama.cpp/versions?per_page=${per_page}&page=${page}")
 
         # Check for API errors
         if echo "$response" | jq -e '.message' > /dev/null 2>&1; then
