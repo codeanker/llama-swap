@@ -1,11 +1,22 @@
 ARG BASE_IMAGE=ghcr.io/codeanker/llama.cpp
 ARG BASE_TAG=server-cuda
 
-# Build llama-swap from source
-FROM golang:1.25 AS builder
+# Clone source
+FROM alpine/git AS source
 ARG LS_REPO=mostlygeek/llama-swap
 ARG LS_REF=main
 RUN git clone --depth 1 --branch ${LS_REF} https://github.com/${LS_REPO}.git /src
+
+# Build UI
+FROM node:22-alpine AS ui-builder
+COPY --from=source /src/ui-svelte /src/ui-svelte
+WORKDIR /src/ui-svelte
+RUN npm install && npm run build
+
+# Build llama-swap from source
+FROM golang:1.25 AS builder
+COPY --from=source /src /src
+COPY --from=ui-builder /src/proxy/ui_dist /src/proxy/ui_dist
 WORKDIR /src
 RUN CGO_ENABLED=0 go build -o /llama-swap .
 
