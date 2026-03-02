@@ -50,9 +50,8 @@ SD_IMAGE=${BASE_SDCPP_IMAGE:-ghcr.io/leejet/stable-diffusion.cpp}
 # to enable easy container builds on forked repos
 LS_REPO=${GITHUB_REPOSITORY:-mostlygeek/llama-swap}
 
-# the most recent llama-swap tag
-# have to strip out the 'v' due to .tar.gz file naming
-LS_VER=$(curl -s https://api.github.com/repos/${LS_REPO}/releases/latest | jq -r .tag_name | sed 's/v//')
+# Git ref to build llama-swap from (branch, tag, or commit)
+LS_REF=${LS_REF:-main}
 
 # Fetches the most recent llama.cpp tag matching the given prefix
 # Handles pagination to search beyond the first 100 results
@@ -127,7 +126,7 @@ if [[ ! -z "$DEBUG_ABORT_BUILD" ]]; then
 fi
 
 for CONTAINER_TYPE in non-root root; do
-  CONTAINER_TAG="ghcr.io/${LS_REPO}:v${LS_VER}-${ARCH}-${LCPP_TAG}"
+  CONTAINER_TAG="ghcr.io/${LS_REPO}:${ARCH}-${LCPP_TAG}"
   CONTAINER_LATEST="ghcr.io/${LS_REPO}:${ARCH}"
   USER_UID=0
   USER_GID=0
@@ -141,9 +140,9 @@ for CONTAINER_TYPE in non-root root; do
     USER_HOME=/app
   fi
 
-  log_info "Building $CONTAINER_TYPE $CONTAINER_TAG $LS_VER"
-  docker build --provenance=false -f llama-swap.Containerfile --build-arg BASE_TAG=${BASE_TAG} --build-arg LS_VER=${LS_VER} --build-arg UID=${USER_UID} \
-    --build-arg LS_REPO=${LS_REPO} --build-arg GID=${USER_GID} --build-arg USER_HOME=${USER_HOME} -t ${CONTAINER_TAG} -t ${CONTAINER_LATEST} \
+  log_info "Building $CONTAINER_TYPE $CONTAINER_TAG"
+  docker build --provenance=false -f llama-swap.Containerfile --build-arg BASE_TAG=${BASE_TAG} --build-arg UID=${USER_UID} \
+    --build-arg LS_REPO=${LS_REPO} --build-arg LS_REF=${LS_REF} --build-arg GID=${USER_GID} --build-arg USER_HOME=${USER_HOME} -t ${CONTAINER_TAG} -t ${CONTAINER_LATEST} \
     --build-arg BASE_IMAGE=${BASE_IMAGE} .
 
   # For architectures with stable-diffusion.cpp support, layer sd-server on top

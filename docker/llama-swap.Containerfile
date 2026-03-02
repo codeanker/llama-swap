@@ -1,10 +1,15 @@
 ARG BASE_IMAGE=ghcr.io/codeanker/llama.cpp
 ARG BASE_TAG=server-cuda
-FROM ${BASE_IMAGE}:${BASE_TAG}
 
-# has to be after the FROM
-ARG LS_VER=170
+# Build llama-swap from source
+FROM golang:1.25 AS builder
 ARG LS_REPO=mostlygeek/llama-swap
+ARG LS_REF=main
+RUN git clone --depth 1 --branch ${LS_REF} https://github.com/${LS_REPO}.git /src
+WORKDIR /src
+RUN CGO_ENABLED=0 go build -o /llama-swap .
+
+FROM ${BASE_IMAGE}:${BASE_TAG}
 
 # Set default UID/GID arguments
 ARG UID=10001
@@ -14,12 +19,12 @@ ARG USER_HOME=/app
 # Add user/group
 ENV HOME=$USER_HOME
 RUN if [ $UID -ne 0 ]; then \
-      if [ $GID -ne 0 ]; then \
-        groupadd --system --gid $GID app; \
-      fi; \
-      useradd --system --uid $UID --gid $GID \
-      --home $USER_HOME app; \
-    fi
+  if [ $GID -ne 0 ]; then \
+  groupadd --system --gid $GID app; \
+  fi; \
+  useradd --system --uid $UID --gid $GID \
+  --home $USER_HOME app; \
+  fi
 
 # Handle paths
 RUN mkdir --parents $HOME /app
@@ -33,10 +38,7 @@ WORKDIR /app
 # Add /app to PATH
 ENV PATH="/app:${PATH}"
 
-RUN \
-    curl -LO "https://github.com/${LS_REPO}/releases/download/v${LS_VER}/llama-swap_${LS_VER}_linux_amd64.tar.gz" && \
-    tar -zxf "llama-swap_${LS_VER}_linux_amd64.tar.gz" && \
-    rm "llama-swap_${LS_VER}_linux_amd64.tar.gz"
+COPY --from=builder --chown=$UID:$GID /llama-swap /app/llama-swap
 
 COPY --chown=$UID:$GID config.example.yaml /app/config.yaml
 
