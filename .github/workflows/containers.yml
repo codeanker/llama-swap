@@ -4,8 +4,8 @@ on:
   # time has no specific meaning, trying to time it after
   # the llama.cpp daily packages are published
   # https://github.com/ggml-org/llama.cpp/blob/master/.github/workflows/docker.yml
-  schedule:
-    - cron: "37 5 * * *"
+  # schedule:
+  #   - cron: "37 5 * * *"
 
   # Allows manual triggering of the workflow
   workflow_dispatch:
